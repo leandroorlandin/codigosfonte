@@ -1,0 +1,35 @@
+import java.io.FileWriter;
+import java.io.IOException;
+import org.json.simple.JSONObject;
+
+public class JsonDataUpdater {
+
+   private String host;
+
+   public JsonDataUpdater(String filePath) {
+      JsonDataLoader loader = new JsonDataLoader(filePath);
+      this.host = loader.getHost();
+   }
+
+   public void updateHost(String novo_host, String filePath) {
+      this.host = novo_host;
+
+      JSONObject jsonObject = new JSONObject();
+      jsonObject.put("host", this.host);
+
+      try (FileWriter file = new FileWriter(filePath)) {
+         file.write(jsonObject.toJSONString());
+         System.out.println("Atualização concluída.");
+      } catch (IOException e) {
+         e.printStackTrace();
+      }
+   }
+
+   public static void main(String[] args) {
+      JsonDataUpdater updater = new JsonDataUpdater("data.json");
+      System.out.println("Host atual: " + updater.host);
+
+      updater.updateHost("https://example.com", "data.json");
+      System.out.println("Novo host: " + updater.host);
+   }
+}
