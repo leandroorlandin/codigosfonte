@@ -1,0 +1,32 @@
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.representer.Representer;
+
+public class DeployUpdater {
+
+    public static void main(String[] args) throws IOException {
+        // Leitura do arquivo YAML
+        Yaml yaml = new Yaml(new Constructor(Map.class), new Representer());
+        Map<String, Object> deploy = yaml.load(DeployUpdater.class.getResourceAsStream("deploy.yaml"));
+
+        // Atualização do campo "host"
+        deploy.put("host", "XPTO");
+
+        // Adição do campo "timestamp_alteracao"
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        deploy.put("timestamp_alteracao", LocalDateTime.now().format(formatter));
+
+        // Escrita do arquivo YAML atualizado
+        FileWriter writer = new FileWriter(new File("deploy.yaml"));
+        yaml.dump(deploy, writer);
+        writer.close();
+    }
+
+}
