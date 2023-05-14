@@ -1,0 +1,59 @@
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+public class DeployJsonUpdater {
+
+   private static final String NOVO_HOST = "XPTO";
+   private static final String JSON_FILE_PATH = "deploy.json";
+
+   public static void main(String[] args) {
+      // Carrega o arquivo JSON em memória
+      JSONObject deployJson = loadJsonFromFile(JSON_FILE_PATH);
+      System.out.println("Arquivo JSON carregado em memória:\n" + deployJson);
+
+      // Altera o conteúdo do campo "host" para "XPTO"
+      deployJson.put("host", NOVO_HOST);
+
+      // Adiciona o campo "timestamp_alteracao" com o valor atual do timestamp
+      String timestampAtual = getFormattedCurrentTimestamp();
+      deployJson.put("timestamp_alteracao", timestampAtual);
+
+      // Atualiza o arquivo JSON com as alterações
+      updateJsonFile(deployJson, JSON_FILE_PATH);
+      System.out.println("Arquivo JSON atualizado com sucesso.");
+   }
+
+   private static JSONObject loadJsonFromFile(String filePath) {
+      JSONObject jsonObject = null;
+      JSONParser parser = new JSONParser();
+
+      try (FileReader reader = new FileReader(filePath)) {
+         Object obj = parser.parse(reader);
+         jsonObject = (JSONObject) obj;
+      } catch (IOException | ParseException e) {
+         e.printStackTrace();
+      }
+
+      return jsonObject;
+   }
+
+   private static void updateJsonFile(JSONObject jsonObject, String filePath) {
+      try (FileWriter file = new FileWriter(filePath)) {
+         file.write(jsonObject.toJSONString());
+      } catch (IOException e) {
+         e.printStackTrace();
+      }
+   }
+
+   private static String getFormattedCurrentTimestamp() {
+      LocalDateTime now = LocalDateTime.now();
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+      return now.format(formatter);
+   }
+}
