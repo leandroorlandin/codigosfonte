@@ -6,37 +6,23 @@ import org.json.simple.parser.ParseException;
 
 public class JsonDataLoader {
 
-   private String name;
-   private int age;
-   private String city;
+   private String ghsPaasSantanderBrPreCorp;
 
    public JsonDataLoader(String filePath) throws IOException, ParseException {
       JSONParser parser = new JSONParser();
       Object obj = parser.parse(new FileReader(filePath));
       JSONObject jsonObject = (JSONObject) obj;
-      this.name = (String) jsonObject.get("name");
-      this.age = (int) (long) jsonObject.get("age"); // o cast é necessário, pois o get retorna um Long
-      this.city = (String) jsonObject.get("city");
+      this.ghsPaasSantanderBrPreCorp = (String) jsonObject.get("ghs.paas.santanderbr.pre.corp");
    }
 
-   public String getName() {
-      return name;
-   }
-
-   public int getAge() {
-      return age;
-   }
-
-   public String getCity() {
-      return city;
+   public String getGhsPaasSantanderBrPreCorp() {
+      return ghsPaasSantanderBrPreCorp;
    }
 
    public static void main(String[] args) {
       try {
          JsonDataLoader loader = new JsonDataLoader("data.json");
-         System.out.println("Name: " + loader.getName());
-         System.out.println("Age: " + loader.getAge());
-         System.out.println("City: " + loader.getCity());
+         System.out.println("ghs.paas.santanderbr.pre.corp: " + loader.getGhsPaasSantanderBrPreCorp());
       } catch (IOException | ParseException e) {
          e.printStackTrace();
       }
