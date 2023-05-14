@@ -6,23 +6,23 @@ import org.json.simple.parser.ParseException;
 
 public class JsonDataLoader {
 
-   private String ghsPaasSantanderBrPreCorp;
+   private String host;
 
    public JsonDataLoader(String filePath) throws IOException, ParseException {
       JSONParser parser = new JSONParser();
       Object obj = parser.parse(new FileReader(filePath));
       JSONObject jsonObject = (JSONObject) obj;
-      this.ghsPaasSantanderBrPreCorp = (String) jsonObject.get("ghs.paas.santanderbr.pre.corp");
+      this.host = (String) jsonObject.get("host");
    }
 
-   public String getGhsPaasSantanderBrPreCorp() {
-      return ghsPaasSantanderBrPreCorp;
+   public String getHost() {
+      return host;
    }
 
    public static void main(String[] args) {
       try {
          JsonDataLoader loader = new JsonDataLoader("data.json");
-         System.out.println("ghs.paas.santanderbr.pre.corp: " + loader.getGhsPaasSantanderBrPreCorp());
+         System.out.println("Host: " + loader.getHost());
       } catch (IOException | ParseException e) {
          e.printStackTrace();
       }
