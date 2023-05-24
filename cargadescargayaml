@@ -1,88 +1,54 @@
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimeZone;
+import requests
+import ruamel.yaml as yaml
+from connexion.resolver import Resolver
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+class CustomResolver(Resolver):
+    def __init__(self, spec_dict):
+        super().__init__(spec_dict)
 
-public class UpdateApiGatewayTemplate {
+    def resolve_remote_references(self, url):
+        # Faz o download do conteúdo do URL
+        response = requests.get(url)
+        content = response.text
 
-    private static final String DEPLOY_FILE_NAME = "deploy.yaml";
-    private static final String TEMPLATE_FILE_NAME = "template.yaml";
-    private static final String OPENAPI_FILE_NAME = "openapi30.yaml";
-    private static final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
-    private static final SimpleDateFormat TIMESTAMP_FORMATTER = new SimpleDateFormat(TIMESTAMP_FORMAT);
-    private static final String REST_API_LOCATION_FIELD = "Location";
-    private static final String OPENAPI_FIELD = "openapi";
-    private static final String OPENAPI_VERSION = "3.0.0";
+        # Carrega o conteúdo do URL como um objeto YAML
+        yaml_data = yaml.YAML(typ='safe').load(content)
 
-    public static void main(String[] args) {
-        if (args.length != 1) {
-            System.err.println("Usage: java UpdateApiGatewayTemplate contratoopenapi30.yaml");
-            System.exit(1);
-        }
+        # Retorna o objeto YAML carregado
+        return yaml_data
 
-        String contratoFileName = args[0];
+    def resolve(self):
+        for url in self.remote_refs:
+            # Faz o download e a resolução das referências remotas
+            remote_data = self.resolve_remote_references(url)
 
-        try {
-            // Carrega o arquivo deploy.yaml
-            Map<String, Object> deploy = loadYaml(DEPLOY_FILE_NAME);
+            # Atualiza o objeto spec_dict com os dados resolvidos
+            self.spec_dict.update(remote_data)
 
-            // Altera o campo host em memória
-            deploy.put("host", "XPTO");
+        # Realiza a resolução padrão do Resolver
+        resolved_data = super().resolve()
 
-            // Cria o campo timestamp_alteracao em memória
-            deploy.put("timestamp_alteracao", getCurrentTimestamp());
+        return resolved_data
 
-            // Carrega o arquivo template.yaml
-            Map<String, Object> template = loadYaml(TEMPLATE_FILE_NAME);
+# Arquivo YAML principal
+yaml_file = 'openAPI.yaml'
 
-            // Altera o campo Location em memória para o nome do arquivo de contrato
-            Map<String, Object> restApi = (Map<String, Object>) template.get("Resources");
-            Map<String, Object> restApiProperties = (Map<String, Object>) restApi.get("RestApi");
-            restApiProperties.put(REST_API_LOCATION_FIELD, contratoFileName);
+# Carrega o arquivo YAML principal
+with open(yaml_file, 'r') as file:
+    yaml_content = file.read()
 
-            // Carrega o arquivo contratoopenapi30.yaml
-            Map<String, Object> contrato = loadYaml(contratoFileName);
+# Cria um objeto YAML
+yaml_data = yaml.YAML(typ='safe').load(yaml_content)
 
-            // Atualiza o campo openapi no arquivo contrato
-            contrato.put(OPENAPI_FIELD, OPENAPI_VERSION);
+# Cria um resolver personalizado
+resolver = CustomResolver(yaml_data)
 
-            // Atualiza o arquivo template.yaml com os dados da memória
-            saveYaml(TEMPLATE_FILE_NAME, template);
+# Resolve as referências remotas
+resolved_data = resolver.resolve()
 
-            // Atualiza o arquivo deploy.yaml com os dados da memória
-            saveYaml(OPENAPI_FILE_NAME, deploy);
-        } catch (IOException e) {
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
-            System.exit(1);
-        }
+# Agora você pode usar os dados resolvidos
+# ...
 
-        System.out.println("Arquivos atualizados com sucesso!");
-    }
-
-    private static Map<String, Object> loadYaml(String fileName) throws IOException {
-        YAMLFactory yamlFactory = new YAMLFactory();
-        ObjectMapper objectMapper = new ObjectMapper(yamlFactory);
-        Path filePath = Paths.get(fileName);
-        if (!Files.exists(filePath)) {
-            throw new FileNotFoundException("File not found: " + fileName);
-        }
-        try (InputStream input = new FileInputStream(filePath.toFile())) {
-            return objectMapper.readValue(input, HashMap.class);
-        }
-    }
-
-    private static void saveYaml(String fileName, Map<String, Object> data) throws IOException {
-        YAMLFactory yamlFactory = new YAMLFactory()
-                .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
-                .enable(YAMLGenerator.Feature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS);
-        ObjectMapper objectMapper = new ObjectMapper
+# Salva o YAML resolvido em um arquivo
+with open('resolved.yaml', 'w') as file:
+    yaml.YAML(typ='safe').dump(resolved_data, file)
