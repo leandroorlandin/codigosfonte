@@ -1,22 +1,27 @@
-import yaml
 import jsonref
+import pathlib
+import yaml
 
+def resolve_references(file_path):
+    with open(file_path, 'r') as file:
+        data = yaml.safe_load(file)
 
-def resolve_references(yaml_data):
-    yaml_data = yaml.load(yaml_data, Loader=yaml.SafeLoader)
-    resolved_data = jsonref.JsonRef.replace_refs(yaml_data)
-    return yaml.dump(resolved_data)
+    resolver = jsonref.JsonRef()
+    resolver.store[''] = data
 
+    def ref_loader(uri):
+        path = pathlib.Path(file_path).resolve().parent / uri
+        with open(path, 'r') as file:
+            return yaml.safe_load(file)
 
-# Leitura do arquivo OpenAPI YAML
-with open("openAPI.yaml", "r") as file:
-    yaml_data = file.read()
+    resolved_data = resolver.resolve(data, base_uri=file_path, referrer=ref_loader)
 
-# Resolução das referências e geração do arquivo compilado
-resolved_data = resolve_references(yaml_data)
+    return resolved_data
 
-# Escrita do arquivo compilado
-with open("openAPI-compiled.yaml", "w") as file:
-    file.write(resolved_data)
+input_file = 'openAPI.yaml'
+output_file = 'openAPI-compiled.yaml'
 
-print("Arquivo compilado salvo com sucesso!")
+resolved_data = resolve_references(input_file)
+
+with open(output_file, 'w') as file:
+    yaml.dump(resolved_data, file)
