@@ -2,69 +2,38 @@ import requests
 import os
 from ruamel.yaml import YAML
 from ruamel.yaml.resolver import Resolver
-from ruamel.yaml.reader import Reader
-from ruamel.yaml.parser import Parser
-from ruamel.yaml.composer import Composer
-from ruamel.yaml.constructor import SafeConstructor
-from ruamel.yaml.constructor import ConstructorError
+from ruamel.yaml.reader import Reader, ReaderError
+from ruamel.yaml.parser import Parser, ParserError
+from ruamel.yaml.composer import Composer, ComposerError
+from ruamel.yaml.constructor import SafeConstructor, ConstructorError
 from ruamel.yaml.scanner import ScannerError
 from ruamel.yaml import YAMLError
 
-def resolve_yaml_references(yaml_data):
-    class ResolverWithRefs(Resolver):
-        def descend_resolver(self, current_node):
-            if isinstance(current_node, dict) and "$ref" in current_node:
-                ref_node = current_node["$ref"]
-                if ref_node.startswith("http"):
-                    # Resolve referências externas usando HTTP requests
-                    response = requests.get(ref_node)
-                    if response.status_code == 200:
-                        return self.resolve(response.text, current_node)
-                    else:
-                        raise YAMLError(f"Error resolving external reference: {ref_node}, HTTP status code: {response.status_code}")
-                else:
-                    # Resolve referências de arquivos locais
-                    local_file_path = os.path.join(os.path.dirname(yaml_file_path), ref_node)
-                    if os.path.exists(local_file_path):
-                        with open(local_file_path, "r") as file:
-                            local_yaml_data = file.read()
-                        return self.resolve(local_yaml_data, current_node)
-                    else:
-                        raise YAMLError(f"Error resolving local reference: {ref_node}, file not found")
-
-            return super().descend_resolver(current_node)
-
+# Função para resolver referências
+def resolve_references(yaml_data):
+    yaml = YAML(typ='safe')
+    yaml.allow_duplicate_keys = True
+    yaml.preserve_quotes = True
+    yaml.indent(mapping=2, sequence=4, offset=2)
+    resolver = Resolver()
+    resolver.process_tag = lambda self, directive, handles: None
+    reader = Reader(yaml_data)
+    parser = Parser(reader)
+    composer = Composer(parser)
     try:
-        resolver = ResolverWithRefs(Reader(yaml_data), Parser, Composer, SafeConstructor)
-        constructor = SafeConstructor()
-        constructor.resolver = resolver
-        composer = Composer(resolver)
-        try:
-            composer.get_single_node()
-        except (ScannerError, ParserError) as e:
-            raise YAMLError(f"Error parsing YAML: {str(e)}")
+        return composer.get_single_node()
+    except (ScannerError, ParserError, ComposerError) as e:
+        print(f"Erro ao processar o YAML: {e}")
 
-        return constructor.construct_document(composer.get_single_node())
-
-    except ConstructorError as e:
-        raise YAMLError(f"Error constructing YAML document: {str(e)}")
-
-# Caminho do arquivo YAML de entrada
-yaml_file_path = "openAPI.yaml"
-
-# Ler o arquivo YAML
-with open(yaml_file_path, "r") as file:
+# Leitura do arquivo YAML
+with open("openAPI.yaml", "r") as file:
     yaml_data = file.read()
 
-# Resolver as referências YAML
-resolved_yaml = resolve_yaml_references(yaml_data)
+# Resolver as referências
+resolved_data = resolve_references(yaml_data)
 
-# Caminho do arquivo de saída YAML
-output_file_path = "openAPI-compiled.yaml"
+# Escrita do arquivo compilado
+with open("openAPI-compiled.yaml", "w") as file:
+    file.write(resolved_data)
 
-# Escrever o YAML resolvido no arquivo de saída
-yaml = YAML()
-with open(output_file_path, "w") as file:
-    yaml.dump(resolved_yaml, file)
-
-print(f"Arquivo '{output_file_path}' criado com sucesso.")
+print("Arquivo compilado salvo com sucesso!")
