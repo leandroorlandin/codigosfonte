@@ -1,7 +1,6 @@
 import yaml
 from urllib.parse import urlparse
 import requests
-from pathlib import Path
 
 def resolve_references(input_file):
     def process_ref(ref):
@@ -10,9 +9,11 @@ def resolve_references(input_file):
             response = requests.get(ref)
             return yaml.safe_load(response.text)
         else:
-            path = Path(input_file).resolve().parent / parts.path
-            with open(path) as f:
-                return yaml.safe_load(f)
+            if parts.path:
+                with open(parts.path) as f:
+                    return yaml.safe_load(f)
+            else:
+                return None
     
     def traverse(obj):
         if isinstance(obj, dict):
