@@ -1,41 +1,39 @@
-import requests
-import yaml
-from jsonschema import RefResolver
+from ruamel.yaml.resolver import Resolver
+from ruamel.yaml.reader import Reader
+from ruamel.yaml.parser import Parser
+from ruamel.yaml.composer import Composer
+from ruamel.yaml.constructor import SafeConstructor
+from ruamel.yaml.constructor import ConstructorError
+from ruamel.yaml.scanner import ScannerError
+from ruamel.yaml import YAMLError
 
-# Função para resolver as referências remotas
-def resolve_remote_refs(url):
-    # Faz o download do conteúdo do URL
-    response = requests.get(url)
-    content = response.text
+def resolve_yaml_references(yaml_data):
+    class ResolverWithRefs(Resolver):
+        def descend_resolver(self, current_node):
+            if isinstance(current_node, dict) and "$ref" in current_node:
+                ref_node = current_node["$ref"]
+                return self.resolve(ref_node, current_node)
+            return super().descend_resolver(current_node)
 
-    # Carrega o conteúdo do URL como um objeto YAML
-    yaml_data = yaml.safe_load(content)
+    try:
+        resolver = ResolverWithRefs(Reader(yaml_data), Parser, Composer, SafeConstructor)
+        constructor = SafeConstructor()
+        constructor.resolver = resolver
+        composer = Composer(resolver)
+        try:
+            composer.get_single_node()
+        except (ScannerError, ParserError) as e:
+            raise YAMLError(f"Error parsing YAML: {str(e)}")
 
-    # Retorna o objeto YAML carregado
-    return yaml_data
+        return constructor.construct_document(composer.get_single_node())
 
-# Arquivo YAML principal
-yaml_file = 'openAPI.yaml'
+    except ConstructorError as e:
+        raise YAMLError(f"Error constructing YAML document: {str(e)}")
 
-# Carrega o arquivo YAML principal
-with open(yaml_file, 'r') as file:
-    yaml_content = file.read()
+# Exemplo de uso:
+with open("openAPI.yaml", "r") as file:
+    yaml_data = file.read()
 
-# Carrega o conteúdo YAML como um objeto
-yaml_data = yaml.safe_load(yaml_content)
+resolved_yaml = resolve_yaml_references(yaml_data)
 
-# Cria um resolver para as referências
-resolver = RefResolver.from_schema(yaml_data)
-
-# Função para resolver as referências remotas
-resolver.resolve_remote = resolve_remote_refs
-
-# Resolve as referências remotas no YAML
-resolved_data = resolver.resolve(yaml_data)
-
-# Agora você pode usar os dados resolvidos
-# ...
-
-# Salva o YAML resolvido em um arquivo
-with open('resolved.yaml', 'w') as file:
-    yaml.dump(resolved_data, file)
+# Agora você pode usar o objeto `resolved_yaml` para trabalhar com os dados YAML resolvidos
