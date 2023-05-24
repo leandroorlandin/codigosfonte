@@ -1,19 +1,30 @@
 from ruamel.yaml import YAML
 
-def resolve_references(file_path):
-    yaml = YAML()
-    yaml.explicit_start = True
-    yaml.preserve_quotes = True
-
-    with open(file_path, 'r') as file:
-        data = yaml.load(file)
-
+def resolve_references(data):
+    if isinstance(data, dict):
+        if "$ref" in data:
+            reference = data["$ref"]
+            with open(reference, "r") as file:
+                referenced_data = yaml.load(file)
+            return referenced_data
+        else:
+            for key, value in data.items():
+                data[key] = resolve_references(value)
+    elif isinstance(data, list):
+        for i in range(len(data)):
+            data[i] = resolve_references(data[i])
     return data
 
-input_file = 'openAPI.yaml'
-output_file = 'openAPI-compiled.yaml'
+openAPICompilado = "openAPI.yaml"
 
-resolved_data = resolve_references(input_file)
+# Carrega o arquivo YAML
+yaml = YAML()
+with open(openAPICompilado, "r") as file:
+    data = yaml.load(file)
 
-with open(output_file, 'w') as file:
+# Resolve as referências
+resolved_data = resolve_references(data)
+
+# Salva o arquivo compilado
+with open("openAPI-compiled.yaml", "w") as file:
     yaml.dump(resolved_data, file)
