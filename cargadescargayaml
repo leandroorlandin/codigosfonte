@@ -1,18 +1,19 @@
+import jsonschema
 from ruamel.yaml import YAML
 
-def resolve_references(data):
+def resolve_references(data, resolver):
     if isinstance(data, dict):
         if "$ref" in data:
             reference = data["$ref"]
             with open(reference, "r") as file:
                 referenced_data = yaml.load(file)
-            return referenced_data
+            return resolve_references(referenced_data, resolver)
         else:
             for key, value in data.items():
-                data[key] = resolve_references(value)
+                data[key] = resolve_references(value, resolver)
     elif isinstance(data, list):
         for i in range(len(data)):
-            data[i] = resolve_references(data[i])
+            data[i] = resolve_references(data[i], resolver)
     return data
 
 openAPICompilado = "openAPI.yaml"
@@ -22,8 +23,11 @@ yaml = YAML()
 with open(openAPICompilado, "r") as file:
     data = yaml.load(file)
 
+# Cria um resolver para as referências
+resolver = jsonschema.RefResolver("", None)
+
 # Resolve as referências
-resolved_data = resolve_references(data)
+resolved_data = resolve_references(data, resolver)
 
 # Salva o arquivo compilado
 with open("openAPI-compiled.yaml", "w") as file:
