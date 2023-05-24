@@ -1,30 +1,29 @@
-import jsonref
+import jsonschema
 import yaml
+from jsonschema import validators
 
-def resolve_references(data):
-    if isinstance(data, dict):
-        if "$ref" in data:
-            reference = data["$ref"]
-            with open(reference, "r") as file:
-                referenced_data = yaml.safe_load(file)
-            return resolve_references(referenced_data)
-        else:
-            for key, value in data.items():
-                data[key] = resolve_references(value)
-    elif isinstance(data, list):
-        for i in range(len(data)):
-            data[i] = resolve_references(data[i])
-    return data
+def resolve_references(schema):
+    if "$ref" in schema:
+        reference = schema["$ref"]
+        with open(reference, "r") as file:
+            referenced_schema = yaml.safe_load(file)
+        return resolve_references(referenced_schema)
+    elif isinstance(schema, dict):
+        for key, value in schema.items():
+            schema[key] = resolve_references(value)
+    elif isinstance(schema, list):
+        for i in range(len(schema)):
+            schema[i] = resolve_references(schema[i])
+    return schema
 
-openAPICompilado = "openAPI.yaml"
-
-# Carrega o arquivo YAML
-with open(openAPICompilado, "r") as file:
+# Carregar o arquivo OpenAPI YAML
+with open("openAPI.yaml", "r") as file:
     data = yaml.safe_load(file)
 
-# Resolve as referências
+# Resolver as referências
 resolved_data = resolve_references(data)
 
-# Salva o arquivo compilado
+# Salvar o arquivo compilado
 with open("openAPI-compiled.yaml", "w") as file:
     yaml.dump(resolved_data, file)
+
