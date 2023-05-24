@@ -1,34 +1,18 @@
 import requests
-import ruamel.yaml as yaml
-from connexion.resolver import Resolver
+import yaml
+from jsonschema import RefResolver
 
-class CustomResolver(Resolver):
-    def __init__(self, spec_dict):
-        super().__init__(spec_dict)
+# Função para resolver as referências remotas
+def resolve_remote_refs(url):
+    # Faz o download do conteúdo do URL
+    response = requests.get(url)
+    content = response.text
 
-    def resolve_remote_references(self, url):
-        # Faz o download do conteúdo do URL
-        response = requests.get(url)
-        content = response.text
+    # Carrega o conteúdo do URL como um objeto YAML
+    yaml_data = yaml.safe_load(content)
 
-        # Carrega o conteúdo do URL como um objeto YAML
-        yaml_data = yaml.YAML().load(content)
-
-        # Retorna o objeto YAML carregado
-        return yaml_data
-
-    def resolve(self):
-        for url in self.remote_refs:
-            # Faz o download e a resolução das referências remotas
-            remote_data = self.resolve_remote_references(url)
-
-            # Atualiza o objeto spec_dict com os dados resolvidos
-            self.spec_dict.update(remote_data)
-
-        # Realiza a resolução padrão do Resolver
-        resolved_data = super().resolve()
-
-        return resolved_data
+    # Retorna o objeto YAML carregado
+    return yaml_data
 
 # Arquivo YAML principal
 yaml_file = 'openAPI.yaml'
@@ -37,18 +21,21 @@ yaml_file = 'openAPI.yaml'
 with open(yaml_file, 'r') as file:
     yaml_content = file.read()
 
-# Cria um objeto YAML
-yaml_data = yaml.YAML().load(yaml_content)
+# Carrega o conteúdo YAML como um objeto
+yaml_data = yaml.safe_load(yaml_content)
 
-# Cria um resolver personalizado
-resolver = CustomResolver(yaml_data)
+# Cria um resolver para as referências
+resolver = RefResolver.from_schema(yaml_data)
 
-# Resolve as referências remotas
-resolved_data = resolver.resolve()
+# Função para resolver as referências remotas
+resolver.resolve_remote = resolve_remote_refs
+
+# Resolve as referências remotas no YAML
+resolved_data = resolver.resolve(yaml_data)
 
 # Agora você pode usar os dados resolvidos
 # ...
 
 # Salva o YAML resolvido em um arquivo
 with open('resolved.yaml', 'w') as file:
-    yaml.YAML().dump(resolved_data, file)
+    yaml.dump(resolved_data, file)
