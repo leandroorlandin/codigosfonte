@@ -1,14 +1,14 @@
-import jsonschema
-import ruamel.yaml as yaml
+from ruamel.yaml import YAML
 
 def resolve_references(file_path):
+    yaml = YAML()
+    yaml.explicit_start = True
+    yaml.preserve_quotes = True
+
     with open(file_path, 'r') as file:
-        data = yaml.safe_load(file)
+        data = yaml.load(file)
 
-    resolver = jsonschema.RefResolver.from_schema(data, store={})
-    resolved_data = resolver.resolve(data)
-
-    return resolved_data
+    return data
 
 input_file = 'openAPI.yaml'
 output_file = 'openAPI-compiled.yaml'
@@ -17,4 +17,3 @@ resolved_data = resolve_references(input_file)
 
 with open(output_file, 'w') as file:
     yaml.dump(resolved_data, file)
-
