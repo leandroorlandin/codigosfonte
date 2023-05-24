@@ -10,7 +10,7 @@ def resolve_references(input_file):
             response = requests.get(ref)
             return yaml.safe_load(response.text)
         else:
-            path = Path(input_file).parent / parts.path
+            path = Path(input_file).resolve().parent / parts.path
             with open(path) as f:
                 return yaml.safe_load(f)
     
