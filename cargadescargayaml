@@ -1,26 +1,19 @@
-import os
 import yaml
+import jsonref
 
-def resolve_references(yaml_data, base_path):
-    def include(loader, node):
-        filename = os.path.join(base_path, node.value)
-        with open(filename, 'r') as file:
-            return yaml.load(file, Loader=yaml.SafeLoader)
 
-    yaml.add_constructor('!include', include)
-
-    resolved_data = yaml.load(yaml_data, Loader=yaml.SafeLoader)
+def resolve_references(yaml_data):
+    yaml_data = yaml.load(yaml_data, Loader=yaml.SafeLoader)
+    resolved_data = jsonref.JsonRef.replace_refs(yaml_data)
     return yaml.dump(resolved_data)
 
-# Caminho base para a pasta "openapi"
-base_path = "openapi"
 
 # Leitura do arquivo OpenAPI YAML
 with open("openAPI.yaml", "r") as file:
     yaml_data = file.read()
 
 # Resolução das referências e geração do arquivo compilado
-resolved_data = resolve_references(yaml_data, base_path)
+resolved_data = resolve_references(yaml_data)
 
 # Escrita do arquivo compilado
 with open("openAPI-compiled.yaml", "w") as file:
