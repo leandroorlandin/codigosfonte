@@ -1,36 +1,26 @@
-import requests
 import os
-from ruamel.yaml import YAML
-from ruamel.yaml.resolver import Resolver
-from ruamel.yaml.reader import Reader, ReaderError
-from ruamel.yaml.parser import Parser, ParserError
-from ruamel.yaml.composer import Composer, ComposerError
-from ruamel.yaml.constructor import SafeConstructor, ConstructorError
-from ruamel.yaml.scanner import ScannerError
-from ruamel.yaml import YAMLError
+import yaml
 
-# Função para resolver referências
-def resolve_references(yaml_data):
-    yaml = YAML(typ='safe')
-    yaml.allow_duplicate_keys = True
-    yaml.preserve_quotes = True
-    yaml.indent(mapping=2, sequence=4, offset=2)
-    resolver = Resolver()
-    resolver.process_tag = lambda self, directive, handles: None
-    reader = Reader(yaml_data)
-    parser = Parser(reader)
-    composer = Composer(parser)
-    try:
-        return composer.get_single_node()
-    except (ScannerError, ParserError, ComposerError) as e:
-        print(f"Erro ao processar o YAML: {e}")
+def resolve_references(yaml_data, base_path):
+    def include(loader, node):
+        filename = os.path.join(base_path, node.value)
+        with open(filename, 'r') as file:
+            return yaml.load(file, Loader=yaml.SafeLoader)
 
-# Leitura do arquivo YAML
+    yaml.add_constructor('!include', include)
+
+    resolved_data = yaml.load(yaml_data, Loader=yaml.SafeLoader)
+    return yaml.dump(resolved_data)
+
+# Caminho base para a pasta "openapi"
+base_path = "openapi"
+
+# Leitura do arquivo OpenAPI YAML
 with open("openAPI.yaml", "r") as file:
     yaml_data = file.read()
 
-# Resolver as referências
-resolved_data = resolve_references(yaml_data)
+# Resolução das referências e geração do arquivo compilado
+resolved_data = resolve_references(yaml_data, base_path)
 
 # Escrita do arquivo compilado
 with open("openAPI-compiled.yaml", "w") as file:
