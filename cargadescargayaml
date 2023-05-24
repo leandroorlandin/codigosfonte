@@ -1,13 +1,22 @@
 import jsonschema
+import requests
 import yaml
 from jsonschema import validators
 
 def resolve_references(schema):
     if "$ref" in schema:
         reference = schema["$ref"]
-        with open(reference, "r") as file:
-            referenced_schema = yaml.safe_load(file)
-        return resolve_references(referenced_schema)
+        if reference.startswith("http"):
+            response = requests.get(reference)
+            if response.ok:
+                referenced_schema = yaml.safe_load(response.text)
+                return resolve_references(referenced_schema)
+            else:
+                raise Exception(f"Failed to fetch reference: {reference}")
+        else:
+            with open(reference, "r") as file:
+                referenced_schema = yaml.safe_load(file)
+            return resolve_references(referenced_schema)
     elif isinstance(schema, dict):
         for key, value in schema.items():
             schema[key] = resolve_references(value)
@@ -26,4 +35,3 @@ resolved_data = resolve_references(data)
 # Salvar o arquivo compilado
 with open("openAPI-compiled.yaml", "w") as file:
     yaml.dump(resolved_data, file)
-
