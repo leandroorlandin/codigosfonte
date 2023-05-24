@@ -1,6 +1,7 @@
 import yaml
 from urllib.parse import urlparse
 import requests
+from pathlib import Path
 
 def resolve_references(input_file):
     def process_ref(ref):
@@ -9,11 +10,9 @@ def resolve_references(input_file):
             response = requests.get(ref)
             return yaml.safe_load(response.text)
         else:
-            if parts.path:
-                with open(parts.path) as f:
-                    return yaml.safe_load(f)
-            else:
-                return None
+            path = Path(input_file).parent / parts.path
+            with open(path) as f:
+                return yaml.safe_load(f)
     
     def traverse(obj):
         if isinstance(obj, dict):
@@ -43,4 +42,3 @@ output_file = "openAPI-compiled.yaml"
 
 resolved_data = resolve_references(input_file)
 save_yaml(resolved_data, output_file)
-``
