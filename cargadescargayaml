@@ -1,20 +1,12 @@
-import jsonref
-import pathlib
-import yaml
+import jsonschema
+import ruamel.yaml as yaml
 
 def resolve_references(file_path):
     with open(file_path, 'r') as file:
         data = yaml.safe_load(file)
 
-    resolver = jsonref.JsonRef()
-    resolver.store[''] = data
-
-    def ref_loader(uri):
-        path = pathlib.Path(file_path).resolve().parent / uri
-        with open(path, 'r') as file:
-            return yaml.safe_load(file)
-
-    resolved_data = resolver.resolve(data, base_uri=file_path, referrer=ref_loader)
+    resolver = jsonschema.RefResolver.from_schema(data, store={})
+    resolved_data = resolver.resolve(data)
 
     return resolved_data
 
