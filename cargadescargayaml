@@ -12,7 +12,7 @@ class CustomResolver(Resolver):
         content = response.text
 
         # Carrega o conteúdo do URL como um objeto YAML
-        yaml_data = yaml.YAML(typ='safe').load(content)
+        yaml_data = yaml.YAML().load(content)
 
         # Retorna o objeto YAML carregado
         return yaml_data
@@ -38,7 +38,7 @@ with open(yaml_file, 'r') as file:
     yaml_content = file.read()
 
 # Cria um objeto YAML
-yaml_data = yaml.YAML(typ='safe').load(yaml_content)
+yaml_data = yaml.YAML().load(yaml_content)
 
 # Cria um resolver personalizado
 resolver = CustomResolver(yaml_data)
@@ -51,4 +51,4 @@ resolved_data = resolver.resolve()
 
 # Salva o YAML resolvido em um arquivo
 with open('resolved.yaml', 'w') as file:
-    yaml.YAML(typ='safe').dump(resolved_data, file)
+    yaml.YAML().dump(resolved_data, file)
