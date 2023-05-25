@@ -1,7 +1,7 @@
 import yaml
 
 def resolve_references(yaml_data):
-    return yaml.load(yaml.dump(yaml_data))
+    return yaml.load(yaml.dump(yaml_data), Loader=yaml.FullLoader)
 
 def process_openapi(input_file, output_file):
     with open(input_file, "r") as f:
