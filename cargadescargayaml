@@ -1,21 +1,18 @@
-import ruamel.yaml
-import jsonschema
+import yaml
 
 def resolve_references(yaml_data):
-    resolver = jsonschema.RefResolver.from_schema(yaml_data)
-    return resolver.resolve(yaml_data)
+    return yaml.load(yaml.dump(yaml_data))
 
 def process_openapi(input_file, output_file):
     with open(input_file, "r") as f:
-        yaml_data = ruamel.yaml.safe_load(f)
+        yaml_data = yaml.load(f, Loader=yaml.FullLoader)
     
     resolved_data = resolve_references(yaml_data)
     
     with open(output_file, "w") as f:
-        ruamel.yaml.dump(resolved_data, f)
+        yaml.dump(resolved_data, f)
 
 input_file = "openAPI.yaml"
 output_file = "openAPI-compiled.yaml"
 
 process_openapi(input_file, output_file)
-
