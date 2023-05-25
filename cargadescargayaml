@@ -7,7 +7,7 @@ def resolve_references(yaml_data):
 def process_openapi(input_file, output_file):
     yaml = YAML(typ="safe")
     with open(input_file, "r") as f:
-        yaml_data = yaml.load(f)
+        yaml_data = f.read()
     
     resolved_data = resolve_references(yaml_data)
     
@@ -18,3 +18,4 @@ input_file = "openAPI.yaml"
 output_file = "openAPI-compiled.yaml"
 
 process_openapi(input_file, output_file)
+
