@@ -1,45 +1,21 @@
-import yaml
-from urllib.parse import urlparse
-import requests
+import ruamel.yaml
+from ruamel.yaml.resolver import Resolver
 
-def resolve_references(input_file):
-    def process_ref(ref):
-        parts = urlparse(ref)
-        if parts.scheme in ["http", "https"]:
-            response = requests.get(ref)
-            return yaml.safe_load(response.text)
-        else:
-            if parts.path:
-                with open(parts.path) as f:
-                    return yaml.safe_load(f)
-            else:
-                return None
-    
-    def traverse(obj):
-        if isinstance(obj, dict):
-            if "$ref" in obj:
-                ref = obj["$ref"]
-                del obj["$ref"]
-                resolved_obj = process_ref(ref)
-                if resolved_obj:
-                    obj.update(resolved_obj)
-            for value in obj.values():
-                traverse(value)
-        elif isinstance(obj, list):
-            for item in obj:
-                traverse(item)
-    
-    with open(input_file) as f:
-        data = yaml.safe_load(f)
-        traverse(data)
-        return data
+def resolve_references(data):
+    resolver = Resolver()
+    resolver.resolve(data)
+    return data
 
-def save_yaml(data, output_file):
+def process_openapi(input_file, output_file):
+    with open(input_file, "r") as f:
+        yaml_data = ruamel.yaml.round_trip_load(f, preserve_quotes=True)
+    
+    resolved_data = resolve_references(yaml_data)
+    
     with open(output_file, "w") as f:
-        yaml.dump(data, f)
+        ruamel.yaml.round_trip_dump(resolved_data, f)
 
 input_file = "openAPI.yaml"
 output_file = "openAPI-compiled.yaml"
 
-resolved_data = resolve_references(input_file)
-save_yaml(resolved_data, output_file)
+process_openapi(input_file, output_file)
