@@ -1,11 +1,11 @@
 from ruamel.yaml import YAML
 
 def resolve_references(yaml_data):
-    yaml = YAML()
-    return yaml.load(yaml.dump(yaml_data))
+    yaml = YAML(typ="safe")
+    return yaml.load(yaml_data)
 
 def process_openapi(input_file, output_file):
-    yaml = YAML()
+    yaml = YAML(typ="safe")
     with open(input_file, "r") as f:
         yaml_data = yaml.load(f)
     
@@ -18,4 +18,3 @@ input_file = "openAPI.yaml"
 output_file = "openAPI-compiled.yaml"
 
 process_openapi(input_file, output_file)
-
