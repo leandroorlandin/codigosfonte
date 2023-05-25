@@ -1,11 +1,13 @@
-import yaml
+from ruamel.yaml import YAML
 
 def resolve_references(yaml_data):
-    return yaml.load(yaml.dump(yaml_data), Loader=yaml.FullLoader)
+    yaml = YAML()
+    return yaml.load(yaml.dump(yaml_data))
 
 def process_openapi(input_file, output_file):
+    yaml = YAML()
     with open(input_file, "r") as f:
-        yaml_data = yaml.load(f, Loader=yaml.FullLoader)
+        yaml_data = yaml.load(f)
     
     resolved_data = resolve_references(yaml_data)
     
@@ -16,3 +18,4 @@ input_file = "openAPI.yaml"
 output_file = "openAPI-compiled.yaml"
 
 process_openapi(input_file, output_file)
+
