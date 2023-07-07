@@ -29,11 +29,25 @@ Resources:
       AuthorizationType: NONE
       RequestParameters:
         method.request.header.Content-Type: true
+      RequestModels:
+        application/json: !Ref RequestModel
       Integration:
         Type: AWS_PROXY
         Uri: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambda.Arn}/invocations
         PassthroughBehavior: WHEN_NO_MATCH
         ContentHandling: CONVERT_TO_TEXT
+        RequestTemplates:
+          application/json: |
+            #set($inputRoot = $input.path('$'))
+            {
+              "body": "$util.escapeJavaScript($input.body)",
+              "headers": {
+                #foreach($header in $input.params().header.keySet())
+                "$header": "$util.escapeJavaScript($input.params().header.get($header))"
+                #if($foreach.hasNext),#end
+                #end
+              }
+            }
       MethodResponses:
         - StatusCode: '200'
 
@@ -55,3 +69,22 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub '/aws/apigateway/${MyApi}/access-log'
+
+  RequestModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref MyApi
+      ContentType: application/json
+      Schema:
+        $schema: http://json-schema.org/draft-04/schema#
+        type: object
+        properties:
+          body:
+            type: string
+            maxLength: 512000
+          headers:
+            type: object
+            maxProperties: 20
+            additionalProperties:
+              type: string
+              maxLength: 256
