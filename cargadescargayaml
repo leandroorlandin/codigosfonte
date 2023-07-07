@@ -69,6 +69,18 @@ Resources:
           body:
             type: string
 
+  MyRequest:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref MyApi
+      ContentType: application/json
+      Schema:
+        type: object
+        properties:
+          body:
+            type: string
+            maxLength: 200000  # Limita o tamanho do campo body a 200 KB
+
   MyRequestValidator:
     Type: AWS::ApiGateway::RequestValidator
     Properties:
@@ -80,7 +92,7 @@ Resources:
       RequestBodyValidators:
         - Name: MyRequestBodyValidator
           ValidateRequestBody: true
-          RequestBodyValidationExpression: "contentLength(request.body) <= 500000" # 500 KB
+          RequestBodyValidationExpression: "contentLength(request.body) <= 200000" # 200 KB
 
   MyRequestBodyValidator:
     Type: AWS::ApiGateway::GatewayResponse
