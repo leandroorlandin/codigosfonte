@@ -1,21 +1,57 @@
-from ruamel.yaml import YAML
+Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      DefinitionBody:
+        openapi: 3.0.0
+        info:
+          title: My API
+          version: '1.0'
+        paths:
+          /myendpoint:
+            post:
+              responses:
+                '200':
+                  description: OK
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/MyRequest'
 
-def resolve_references(yaml_data):
-    yaml = YAML(typ="safe")
-    return yaml.load(yaml_data)
+  MyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref MyApi
+      ResourceId: !GetAtt MyApi.RootResourceId
+      HttpMethod: POST
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.header.Content-Type: true
+      Integration:
+        Type: AWS_PROXY
+        Uri: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambda.Arn}/invocations
+        PassthroughBehavior: WHEN_NO_MATCH
+        ContentHandling: CONVERT_TO_TEXT
+      MethodResponses:
+        - StatusCode: '200'
 
-def process_openapi(input_file, output_file):
-    yaml = YAML(typ="safe")
-    with open(input_file, "r") as f:
-        yaml_data = f.read()
-    
-    resolved_data = resolve_references(yaml_data)
-    
-    with open(output_file, "w") as f:
-        yaml.dump(resolved_data, f)
+  MyApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref MyApi
+      StageName: prod
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingBurstLimit: 500
+          ThrottlingRateLimit: 1000
+      AccessLogSetting:
+        DestinationArn: !GetAtt AccessLogGroup.Arn
+        Format: '$context.requestTime $context.requestId $context.identity.sourceIp $context.identity.userAgent $context.httpMethod $context.resourcePath $context.protocol $context.status $context.responseLength $context.requestLength'
 
-input_file = "openAPI.yaml"
-output_file = "openAPI-compiled.yaml"
-
-process_openapi(input_file, output_file)
-
+  AccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/apigateway/${MyApi}/access-log'
