@@ -37,6 +37,7 @@ Resources:
         PassthroughBehavior: WHEN_NO_MATCH
       MethodResponses:
         - StatusCode: '200'
+      RequestValidatorId: !Ref MyRequestValidator
 
   MyApiStage:
     Type: AWS::ApiGateway::Stage
@@ -67,4 +68,56 @@ Resources:
         properties:
           body:
             type: string
-            maxLength: 512000
+
+  MyRequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      RestApiId: !Ref MyApi
+      Name: MyRequestValidator
+      ValidateRequestBody: true
+      ValidateRequestParameters: false
+      ValidateRequestParametersInCache: false
+      RequestBodyValidators:
+        - Name: MyRequestBodyValidator
+          ValidateRequestBody: true
+          RequestBodyValidationExpression: "contentLength(request.body) <= 500000" # 500 KB
+
+  MyRequestBodyValidator:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref MyApi
+      ResponseType: DEFAULT_4XX
+      StatusCode: 413
+      ResponseParameters:
+        gatewayresponse.header.Content-Type: "'text/plain'"
+      ResponseTemplates:
+        "application/json": |
+          {"message": "Payload too large"}
+
+  MyApiMethodSettings:
+    Type: AWS::ApiGateway::MethodSettings
+    Properties:
+      RestApiId: !Ref MyApi
+      StageName: prod
+      MethodPath: '/*/*'
+      Settings:
+        LoggingLevel: INFO
+        MetricsEnabled: true
+        ResourcePath: '/*'
+        HttpMethod: '*'
+        ThrottlingRateLimit: 1000
+        ThrottlingBurstLimit: 500
+        CachingEnabled: false
+        DataTraceEnabled: true
+        CacheDataEncrypted: false
+        CacheTtlInSeconds: 300
+        CacheName: 'None'
+        CacheHeaderParameters: {}
+        CacheKeyParameters: []
+        ContentHandling: CONVERT_TO_TEXT
+        RequestValidation:
+          RequestValidators:
+            - Name: MyRequestValidator
+              ValidateRequestBody: true
+              ValidateRequestParameters: false
+              ValidateRequestParametersInCache: false
