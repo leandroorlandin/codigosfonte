@@ -1,135 +1,56 @@
-Resources:
-  MyApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: prod
-      DefinitionBody:
-        openapi: 3.0.0
-        info:
-          title: My API
-          version: '1.0'
-        paths:
-          /myendpoint:
-            post:
-              responses:
-                '200':
-                  description: OK
-              requestBody:
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/MyRequest'
+Se você deseja definir a política fora do recurso aws_api_gateway_rest_api, você pode usar um bloco de dados aws_iam_policy_document separado para criar a política e, em seguida, referenciá-la no atributo policy do recurso aws_api_gateway_rest_api. Aqui está um exemplo:
 
-  MyMethod:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !Ref MyApi
-      ResourceId: !GetAtt MyApi.RootResourceId
-      HttpMethod: POST
-      AuthorizationType: NONE
-      RequestParameters:
-        method.request.header.Content-Type: true
-      RequestModels:
-        application/json: !Ref RequestModel
-      Integration:
-        Type: AWS_PROXY
-        Uri: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambda.Arn}/invocations
-        PassthroughBehavior: WHEN_NO_MATCH
-      MethodResponses:
-        - StatusCode: '200'
-      RequestValidatorId: !Ref MyRequestValidator
 
-  MyApiStage:
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      RestApiId: !Ref MyApi
-      StageName: prod
-      MethodSettings:
-        - ResourcePath: "/*"
-          HttpMethod: "*"
-          ThrottlingBurstLimit: 500
-          ThrottlingRateLimit: 1000
-      AccessLogSetting:
-        DestinationArn: !GetAtt AccessLogGroup.Arn
-        Format: '$context.requestTime $context.requestId $context.identity.sourceIp $context.identity.userAgent $context.httpMethod $context.resourcePath $context.protocol $context.status $context.responseLength $context.requestLength'
 
-  AccessLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub '/aws/apigateway/${MyApi}/access-log'
 
-  RequestModel:
-    Type: AWS::ApiGateway::Model
-    Properties:
-      RestApiId: !Ref MyApi
-      ContentType: application/json
-      Schema:
-        type: object
-        properties:
-          body:
-            type: string
+# Criação do Log Group do CloudWatch
+resource "aws_cloudwatch_log_group" "rest_api_access_log_group" {
+  name = "my-rest-api-access-log"
+  # Configurações adicionais do Log Group
+  # ...
+}
 
-  MyRequest:
-    Type: AWS::ApiGateway::Model
-    Properties:
-      RestApiId: !Ref MyApi
-      ContentType: application/json
-      Schema:
-        type: object
-        properties:
-          body:
-            type: string
-            maxLength: 200000  # Limita o tamanho do campo body a 200 KB
+# Definição da política para a API Gateway REST v1
+data "aws_iam_policy_document" "rest_api_policy" {
+  statement {
+    effect    = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+    actions   = ["logs:CreateLogStream"]
+    resources = [aws_cloudwatch_log_group.rest_api_access_log_group.arn]
+  }
 
-  MyRequestValidator:
-    Type: AWS::ApiGateway::RequestValidator
-    Properties:
-      RestApiId: !Ref MyApi
-      Name: MyRequestValidator
-      ValidateRequestBody: true
-      ValidateRequestParameters: false
-      ValidateRequestParametersInCache: false
-      RequestBodyValidators:
-        - Name: MyRequestBodyValidator
-          ValidateRequestBody: true
-          RequestBodyValidationExpression: "contentLength(request.body) <= 200000" # 200 KB
+  statement {
+    effect    = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+    actions   = [
+      "logs:PutLogEvents",
+      "logs:CreateLogGroup",
+    ]
+    resources = ["${aws_cloudwatch_log_group.rest_api_access_log_group.arn}:log-stream:*"]
+  }
+}
 
-  MyRequestBodyValidator:
-    Type: AWS::ApiGateway::GatewayResponse
-    Properties:
-      RestApiId: !Ref MyApi
-      ResponseType: DEFAULT_4XX
-      StatusCode: 413
-      ResponseParameters:
-        gatewayresponse.header.Content-Type: "'text/plain'"
-      ResponseTemplates:
-        "application/json": |
-          {"message": "Payload too large"}
+# Recurso da API Gateway REST v1
+resource "aws_api_gateway_rest_api" "my_rest_api" {
+  name        = "my-rest-api"
+  description = "My REST API"
+  # Outras configurações do recurso da API Gateway REST v1
+  # ...
 
-  MyApiMethodSettings:
-    Type: AWS::ApiGateway::MethodSettings
-    Properties:
-      RestApiId: !Ref MyApi
-      StageName: prod
-      MethodPath: '/*/*'
-      Settings:
-        LoggingLevel: INFO
-        MetricsEnabled: true
-        ResourcePath: '/*'
-        HttpMethod: '*'
-        ThrottlingRateLimit: 1000
-        ThrottlingBurstLimit: 500
-        CachingEnabled: false
-        DataTraceEnabled: true
-        CacheDataEncrypted: false
-        CacheTtlInSeconds: 300
-        CacheName: 'None'
-        CacheHeaderParameters: {}
-        CacheKeyParameters: []
-        ContentHandling: CONVERT_TO_TEXT
-        RequestValidation:
-          RequestValidators:
-            - Name: MyRequestValidator
-              ValidateRequestBody: true
-              ValidateRequestParameters: false
-              ValidateRequestParametersInCache: false
+  # Configuração do acesso ao log group
+  policy = data.aws_iam_policy_document.rest_api_policy.json
+}
+
+
+
+
+
+No exemplo acima, a política é definida no bloco de dados aws_iam_policy_document separado chamado rest_api_policy. A política contém as mesmas declarações do exemplo anterior. Em seguida, no recurso aws_api_gateway_rest_api, o atributo policy é definido como data.aws_iam_policy_document.rest_api_policy.json, referenciando a política definida.
+
+Essa abordagem permite que você defina a política em um bloco de dados separado e a reutilize em vários recursos, se necessário, fornecendo uma melhor organização do código.
