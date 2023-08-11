@@ -1,0 +1,26 @@
+name: Download File from API
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  download-file:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      
+    - name: Set up API URL
+      run: echo "API_URL=https://api.example.com/file" >> $GITHUB_ENV
+      
+    - name: Download File
+      run: |
+        API_URL=$API_URL
+        FILE_NAME=file.txt
+        curl -o $FILE_NAME $API_URL
+        
+    - name: Display File Content
+      run: cat file.txt
