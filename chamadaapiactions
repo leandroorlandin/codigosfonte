@@ -1,3 +1,9 @@
+path="/var/lib/docker/github/actions-runner/_work/ghs-api-meu-repositorio-openapi3-cloud/ghs-api-meu-repositorio-openapi3-cloud"
+repo_name=$(echo "$path" | sed -n 's/.*ghs-api-\(.*\)-openapi3-cloud.*/\1/p')
+echo "$repo_name"
+
+
+
 name: Download File from API
 
 on:
