@@ -1,6 +1,9 @@
 serviço: 's/.*\/\(.*\)-v[0-9]\+-openapi-multicloud/\1/'
 versão: 's/.*-v\([0-9]\+\)-openapi-multicloud/\1/'
 
+# Upload do arquivo para o repositório "raw-openapi"
+curl -X PUT -H "Authorization: Bearer $token" "$artifactory_url/artifactory/$repo_nome/$arquivo" -T $arquivo
+
 Se você deseja definir a política fora do recurso aws_api_gateway_rest_api, você pode usar um bloco de dados aws_iam_policy_document separado para criar a política e, em seguida, referenciá-la no atributo policy do recurso aws_api_gateway_rest_api. Aqui está um exemplo:
 
 
