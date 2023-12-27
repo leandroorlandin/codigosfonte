@@ -1,17 +1,1 @@
-Wapenik, boa tarde!
-Tudo bem?
-
-Gostaria de sugerir uma importante melhoria em relação à utilização dos certificados no Ingress Controller do EKS.
-
-Para a conta TOS, solicitamos com prioridade que o certificado seja ajustado para conter a cadeia toda da CA certificadora, e não apenas o certificado. A conta TOS se encontra atualmente em fase piloto com o serviço apigateway da AWS. Esta atualização é crucial para garantir a segurança das conexões estabelecidas.
-
-Aproveitando a oportunidade, sugerimos que a equipe do PaaS realize testes abrangentes e elabore um roadmap para a substituição sistemática dos certificados existentes no EKS para as demais siglas, minimizando potenciais interrupções no serviço.
-
-É importante ressaltar que a utilização da cadeia completa do certificado é fundamental. Além de garantir uma validação correta, isso possibilita a integração perfeita do EKS com o AWS apigateway, assegurando conexões seguras e prevenindo possíveis erros de SSL no ingress controller do EKS.
-
-Julio Bando, boa tarde!
-Solicito a ratificação do pedido acima.
-Esteja a vontade para complementar qualquer informação.
-
-Att,
-Leandro Orlandin
+texto
