@@ -1,62 +1,8 @@
-serviço: 's/.*\/\(.*\)-v[0-9]\+-openapi-multicloud/\1/'
-versão: 's/.*-v\([0-9]\+\)-openapi-multicloud/\1/'
+#set($headers = $input.headers)
 
-# Upload do arquivo para o repositório "raw-openapi"
-curl -X PUT -H "Authorization: Bearer $token" "$artifactory_url/artifactory/$repo_nome/$arquivo" -T $arquivo
+#foreach($headerKey in $input.params('response-headers').keySet())
+    #set($headerValue = $input.params('response-headers').get($headerKey))
+    $context.responseOverride.header.$headerKey = $headerValue
+#end
 
-Se você deseja definir a política fora do recurso aws_api_gateway_rest_api, você pode usar um bloco de dados aws_iam_policy_document separado para criar a política e, em seguida, referenciá-la no atributo policy do recurso aws_api_gateway_rest_api. Aqui está um exemplo:
-
-
-
-
-# Criação do Log Group do CloudWatch
-resource "aws_cloudwatch_log_group" "rest_api_access_log_group" {
-  name = "my-rest-api-access-log"
-  # Configurações adicionais do Log Group
-  # ...
-}
-
-# Definição da política para a API Gateway REST v1
-data "aws_iam_policy_document" "rest_api_policy" {
-  statement {
-    effect    = "Allow"
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-    actions   = ["logs:CreateLogStream"]
-    resources = [aws_cloudwatch_log_group.rest_api_access_log_group.arn]
-  }
-
-  statement {
-    effect    = "Allow"
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-    actions   = [
-      "logs:PutLogEvents",
-      "logs:CreateLogGroup",
-    ]
-    resources = ["${aws_cloudwatch_log_group.rest_api_access_log_group.arn}:log-stream:*"]
-  }
-}
-
-# Recurso da API Gateway REST v1
-resource "aws_api_gateway_rest_api" "my_rest_api" {
-  name        = "my-rest-api"
-  description = "My REST API"
-  # Outras configurações do recurso da API Gateway REST v1
-  # ...
-
-  # Configuração do acesso ao log group
-  policy = data.aws_iam_policy_document.rest_api_policy.json
-}
-
-
-
-
-
-No exemplo acima, a política é definida no bloco de dados aws_iam_policy_document separado chamado rest_api_policy. A política contém as mesmas declarações do exemplo anterior. Em seguida, no recurso aws_api_gateway_rest_api, o atributo policy é definido como data.aws_iam_policy_document.rest_api_policy.json, referenciando a política definida.
-
-Essa abordagem permite que você defina a política em um bloco de dados separado e a reutilize em vários recursos, se necessário, fornecendo uma melhor organização do código.
+$input.body
