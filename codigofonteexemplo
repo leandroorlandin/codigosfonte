@@ -1,9 +1,7 @@
 #set($responseHeaders = $input.params('response-headers'))
 
-#foreach($headerKey in $responseHeaders.keySet())
-    #set($headerValue = $responseHeaders.get($headerKey))
-    $context.responseOverride.header.put($headerKey, $headerValue)
+#foreach($header in $responseHeaders.keySet())
+    $context.responseOverride.header[$header] = $responseHeaders[$header]
 #end
 
 $input.body
-
