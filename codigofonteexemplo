@@ -1,7 +1,10 @@
-#set($responseHeaders = $input.params('response-headers'))
+https://ibpj.api.santander.com.br/exp_verification_credit_account_pix/v1/contracts
 
-#foreach($header in $responseHeaders.keySet())
-    $context.responseOverride.header[$header] = $responseHeaders[$header]
-#end
 
-$input.body
+        {
+            "timestamp": "1725906803559",
+            "httpStatus": "Unauthorized",
+            "errorCode": 401,
+            "trackingId":"84717a1d-217e-4871-9a2a-9648741c78a0"
+        }
+        
